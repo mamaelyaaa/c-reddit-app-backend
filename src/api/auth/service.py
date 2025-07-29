@@ -11,6 +11,7 @@ from core.exceptions import (
     ForbiddenException,
     BadRequestException,
 )
+from schemas import BaseResponseIdSchema
 from utils.security import verify_passwords, hash_password
 from .jwt.repository import JWTRepositoryProtocol, JWTRepositoryDep
 from .jwt.schemas import BearerResponseSchema
@@ -30,7 +31,9 @@ logger = logging.getLogger(__name__)
 
 class AuthServiceProtocol(Protocol):
 
-    async def register_user(self, user_data: UserRegisterSchema) -> int:
+    async def register_user(
+        self, user_data: UserRegisterSchema
+    ) -> BaseResponseIdSchema:
         pass
 
     async def login_user(
@@ -74,7 +77,9 @@ class AuthService:
         self.user_repo = user_repo
         self.jwt_repo = jwt_repo
 
-    async def register_user(self, user_data: UserRegisterSchema) -> int:
+    async def register_user(
+        self, user_data: UserRegisterSchema
+    ) -> BaseResponseIdSchema:
         exists_user = await self.user_repo.check_users_exists(
             username=user_data.username, email=str(user_data.email)
         )
@@ -91,7 +96,7 @@ class AuthService:
 
         user_id = await self.user_repo.add_user(user_data=data)
         logger.info(f"Пользователь {data.username} успешно зарегистрирован!")
-        return user_id
+        return BaseResponseIdSchema(id=user_id)
 
     async def login_user(
         self, user_data: UserLoginSchema, response: Response

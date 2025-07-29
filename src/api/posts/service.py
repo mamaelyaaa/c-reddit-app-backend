@@ -13,6 +13,7 @@ from .schemas import (
     PostReadSchema,
     PostUpdateSchema,
     PostUpdatePartialSchema,
+    PostDetailSchema,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class PostServiceProtocol(Protocol):
     async def create_post(self, user_id: int, post_data: PostCreateSchema) -> int:
         pass
 
-    async def get_post_by_post_id(self, user_id: int, post_id: int) -> PostReadSchema:
+    async def get_post_by_post_id(self, user_id: int, post_id: int) -> PostDetailSchema:
         pass
 
     async def get_posts(
@@ -70,13 +71,13 @@ class PostService:
         logger.info(f"Пост #%d пользователя #%d успешно создан!", post_id, user_id)
         return post_id
 
-    async def get_post_by_post_id(self, user_id: int, post_id: int) -> PostReadSchema:
+    async def get_post_by_post_id(self, user_id: int, post_id: int) -> PostDetailSchema:
         post = await self.post_repo.get_user_post(user_id=user_id, id=post_id)
         if not post:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
         logger.info(f"Пользователь #%d открыл пост #%d", user_id, post_id)
-        return PostReadSchema.model_validate(post)
+        return PostDetailSchema.model_validate(post)
 
     async def get_posts(
         self,

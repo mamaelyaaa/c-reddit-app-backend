@@ -9,6 +9,7 @@ from .schemas import (
     PostReadSchema,
     PostUpdateSchema,
     PostUpdatePartialSchema,
+    PostDetailSchema,
 )
 from .service import PostServiceDep
 
@@ -39,13 +40,16 @@ async def create_post(
     return {"post_id": post_id, "task_id": task.task_id}
 
 
-@router.get("/{post_id}", response_model=PostReadSchema)
+@router.get("/{post_id}", response_model=PostDetailSchema)
 async def get_post_by_post_id(
     active_user: ActiveUserDep,
     post_service: PostServiceDep,
     post_id: int,
 ):
-    """Получение поста авторизованного пользователя по уникальному id"""
+    """
+    Получение поста авторизованного пользователя по уникальному id
+    Дополнительно: получение комментариев под постом
+    """
     post = await post_service.get_post_by_post_id(
         user_id=active_user.id, post_id=post_id
     )

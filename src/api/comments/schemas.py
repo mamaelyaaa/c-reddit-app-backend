@@ -2,13 +2,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, ConfigDict
 
+from api.auth.users.schemas import UserSummaryReadSchema
+
 
 class CommentBaseSchema(BaseModel):
     """Базовая схема для комментария"""
 
-    post_id: int
-    user_id: int
-    comment: str = Field(le=2048)
+    content: str
 
 
 class CommentCreateSchema(CommentBaseSchema):
@@ -21,7 +21,24 @@ class CommentReadSchema(CommentBaseSchema):
     """Схема для чтения комментария из базы"""
 
     id: int
-    created_at: datetime
+    post_id: int
+    author: UserSummaryReadSchema
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CommentSummaryReadSchema(CommentBaseSchema):
+    """Схема для краткого чтения комментария из базы"""
+
+    id: int
+    author: UserSummaryReadSchema
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CommentUpdateSchema(CommentBaseSchema):
+    """Схема для обновления комментария"""
+
+    content: str = Field(le=2048)

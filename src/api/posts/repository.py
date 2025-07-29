@@ -4,6 +4,7 @@ from typing import Protocol, Annotated, Optional, Sequence, Any
 from fastapi import Depends
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio.session import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from core.dependencies import SessionDep
 from core.exceptions import BadValidationException
@@ -22,7 +23,7 @@ class PostRepositoryProtocol(Protocol):
     ) -> int:
         pass
 
-    async def get_user_post(self, user_id: int, *args, **kwargs) -> Optional[Post]:
+    async def get_user_post(self, *args, **kwargs) -> Optional[Post]:
         pass
 
     async def get_user_posts(
@@ -44,6 +45,9 @@ class PostRepositoryProtocol(Protocol):
         update_data: PostUpdateSchema | PostUpdatePartialSchema,
         partial: bool,
     ) -> Optional[Post]:
+        pass
+
+    async def increment_post_comments(self, post: Post) -> int:
         pass
 
     async def delete_post(self, post: Post) -> None:
@@ -69,9 +73,9 @@ class PostRepository:
         await self.session.commit()
         return post.id
 
-    async def get_user_post(self, user_id: int, *args, **kwargs) -> Optional[Post]:
-        logger.debug(f"Ищем пост пользователя #{user_id} с {kwargs} ...")
-        query = select(Post).filter_by(user_id=user_id, **kwargs)
+    async def get_user_post(self, *args, **kwargs) -> Optional[Post]:
+        logger.debug(f"Ищем пост с фильтрами {kwargs} ...")
+        query = select(Post).options(selectinload(Post.comments)).filter_by(**kwargs)
         res = await self.session.execute(query)
         return res.scalar_one_or_none()
 
@@ -89,7 +93,11 @@ class PostRepository:
             user_id,
             offset,
         )
-        query = select(Post).filter_by(user_id=user_id, **kwargs)
+        query = (
+            select(Post)
+            .options(selectinload(Post.comments))
+            .filter_by(user_id=user_id, **kwargs)
+        )
         query = query.limit(limit).offset(offset)
         res = await self.session.execute(query)
         return res.scalars().all()
@@ -103,6 +111,12 @@ class PostRepository:
         query = select(Post).filter_by(user_id=user_id, title=title)
         res = await self.session.scalar(query)
         return True if res else False
+
+    async def increment_post_comments(self, post: Post) -> int:
+        logger.debug("Обновляем количество комментариев для поста #%d ...", post.id)
+        post.comments_count += 1
+        await self.session.commit()
+        return post.comments_count
 
     async def update_post(
         self,

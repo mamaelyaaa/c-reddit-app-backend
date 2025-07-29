@@ -17,8 +17,8 @@ class Comment(Base, DateMixin):
     # Колонки
     post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"))
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    comment: Mapped[str] = mapped_column(Text)
+    content: Mapped[str] = mapped_column(Text)
 
     # Отношения
     post: Mapped["Post"] = relationship(back_populates="comments")
-    owner: Mapped["User"] = relationship(backref="comment")
+    author: Mapped["User"] = relationship(backref="comment")

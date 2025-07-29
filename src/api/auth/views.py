@@ -7,6 +7,7 @@ from fastapi import (
 )
 from fastapi.security import HTTPBearer
 
+from schemas import BaseResponseIdSchema
 from .dependencies import ActiveUserDep, CurrentUserDep
 from .jwt.schemas import BearerResponseSchema
 from .service import AuthServiceDep
@@ -22,10 +23,14 @@ router = APIRouter(prefix="/users", tags=["Авторизация"])
 http_bearer = HTTPBearer(auto_error=False)
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+    response_model=BaseResponseIdSchema,
+)
 async def register_user(auth_service: AuthServiceDep, user_data: UserRegisterSchema):
     user_id = await auth_service.register_user(user_data)
-    return {"user_id": user_id}
+    return user_id
 
 
 @router.post("/login", response_model=BearerResponseSchema)
