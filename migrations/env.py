@@ -1,21 +1,19 @@
 import asyncio
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from alembic import context
-
+# Models
+from api.auth.users.models import User  # type: ignore
+from api.comments.models import Comment  # type: ignore
+from api.feeds.models import UserFeed  # type: ignore
+from api.follows.models import Follow  # type: ignore
+from api.posts.models import Post  # type: ignore
 from core import settings
 from models import Base
-
-# Models
-from api.auth.users.models import User
-from api.posts.models import Post
-from api.follows.models import Follow
-from api.feeds.models import UserFeed
-
 
 config = context.config
 
