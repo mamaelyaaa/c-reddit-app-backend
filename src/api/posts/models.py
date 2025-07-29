@@ -4,11 +4,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.schema import UniqueConstraint, ForeignKey
 from sqlalchemy.types import String
 
-from api.feeds.models import UserFeed
 from models import Base, DateMixin
 
 if TYPE_CHECKING:
     from api.auth.users.models import User
+    from api.comments.models import Comment
 
 
 class Post(Base, DateMixin):
@@ -28,6 +28,7 @@ class Post(Base, DateMixin):
 
     # Отношения
     user: Mapped["User"] = relationship(back_populates="posts")
+    comments: Mapped[list["Comment"]] = relationship(back_populates="post")
 
     # Дополнительно
     repr_cols_num = 2
