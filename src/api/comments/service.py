@@ -5,7 +5,7 @@ from fastapi import Depends
 
 from api.posts.repository import PostRepositoryProtocol, PostRepositoryDep
 from core.exceptions import NotFoundException
-from schemas import PaginationSchema, BaseResponseIdSchema
+from schemas import PaginationSchema, BaseResponseIdSchema, SearchResponseSchema
 from .models import Comment
 from .repository import CommentRepositoryProtocol, CommentRepositoryDep
 from .schemas import (
@@ -85,24 +85,32 @@ class CommentServiceImpl:
 
     async def get_all_post_comments(
         self, post_id: int, pagination: PaginationSchema
-    ) -> list[CommentReadSchema]:
+    ) -> SearchResponseSchema[CommentReadSchema]:
         post = await self.post_repo.get_user_post(id=post_id)
         if not post:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
+
+        total_count = await self.comm_repo.count(post_id=post_id)
 
         comments = await self.comm_repo.read_all(
             limit=pagination.limit,
             offset=(pagination.page - 1) * pagination.limit,
             post_id=post_id,
         )
+
         logger.info(
             "Пользователь вывел %d комментариев под постом #%d, начиная с %d",
             pagination.limit,
             post_id,
             (pagination.page - 1) * pagination.limit,
         )
-        return [CommentReadSchema.model_validate(comm) for comm in comments]
+
+        return SearchResponseSchema(
+            detail=[CommentReadSchema.model_validate(comm) for comm in comments],
+            pagination=pagination,
+            total_found=total_count
+        )
 
     async def get_user_post_comment(
         self, post_id: int, comment_id: int

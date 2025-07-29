@@ -7,12 +7,13 @@ from typing import (
 )
 
 from fastapi import Depends
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from core.dependencies import SessionDep
 from .models import Comment
+from ..posts.models import Post
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,9 @@ class CommentRepositoryProtocol(Protocol):
     async def read_all(
         self, limit: int, offset: int, *args, **filter_by
     ) -> Sequence[Comment]:
+        pass
+
+    async def count(self, post_id: int) -> int:
         pass
 
     async def update(self, comment: Comment, upd_comm: str) -> Comment:
@@ -59,9 +63,7 @@ class CommentRepositoryImpl:
     async def read_one(self, *args, **filter_by) -> Optional[Comment]:
         logger.debug(f"Ищем один комментарий под постом с фильтрами {filter_by} ...")
         query = (
-            select(Comment)
-            .options(joinedload(Comment.author))
-            .filter_by(**filter_by)
+            select(Comment).options(joinedload(Comment.author)).filter_by(**filter_by)
         )
         comm = await self.session.execute(query)
         return comm.scalar_one_or_none()
@@ -79,6 +81,12 @@ class CommentRepositoryImpl:
         )
         comms = await self.session.scalars(query)
         return comms.all()
+
+    async def count(self, post_id: int) -> int:
+        logger.debug(f"Считаем количество комментариев под постом #%d ...", post_id)
+        query = select(func.count(Comment.id)).filter(Comment.post_id == post_id)
+        comm = await self.session.execute(query)
+        return comm.scalar_one()
 
     async def update(self, comment: Comment, upd_comm: str) -> Comment:
         logger.debug(

@@ -60,9 +60,7 @@ async def get_all_post_comments(
     """Вывод комментариев под постом с пагинацией"""
 
     comments = await comm_service.get_all_post_comments(post_id, pagination)
-
-    # TODO Выводить общее количество комментариев
-    return SearchResponseSchema(detail=comments, pagination=pagination, total_found=-1)
+    return comments
 
 
 @router.get("/{post_id}/comments/{comment_id}", response_model=CommentReadSchema)
