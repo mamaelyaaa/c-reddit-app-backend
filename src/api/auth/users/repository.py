@@ -21,9 +21,6 @@ class UserRepositoryProtocol(Protocol):
     async def get_user(self, *args, **kwargs) -> Optional[User]:
         pass
 
-    async def check_user_exists(self, *args, **kwargs) -> bool:
-        pass
-
     async def check_users_exists(self, username: str, email: str) -> bool:
         pass
 
@@ -53,12 +50,6 @@ class UserRepository:
         query = select(User).filter_by(**kwargs)
         res = await self.session.execute(query)
         return res.scalar_one_or_none()
-
-    async def check_user_exists(self, *args, **kwargs) -> bool:
-        logger.debug(f"Проверяем существует ли пользователь с {kwargs} ...")
-        query = select(User).filter_by(**kwargs)
-        user = await self.session.scalar(query)
-        return user is None
 
     async def check_users_exists(self, username: str, email: str) -> bool:
         logger.debug(

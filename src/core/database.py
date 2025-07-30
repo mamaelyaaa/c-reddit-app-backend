@@ -48,5 +48,8 @@ class Database:
             except ConnectionDoesNotExistError as e:
                 raise UnavailableServiceException(str(e))
 
+    @property
+    def get_session_factory(self):
+        return self._session_factory
 
 db_helper = Database(url=str(settings.db.POSTGRES_DSN), echo=bool(settings.db.echo))

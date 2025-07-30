@@ -105,7 +105,7 @@ class CommentRepositoryImpl:
         return
 
 
-async def get_comment_repository(session: SessionDep) -> CommentRepositoryProtocol:
+def get_comment_repository(session: SessionDep) -> CommentRepositoryProtocol:
     return CommentRepositoryImpl(session)
 
 

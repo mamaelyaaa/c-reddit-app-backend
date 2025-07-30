@@ -9,9 +9,9 @@ from .posts.views import router as posts_router
 
 router = APIRouter(prefix="/api")
 
-router.include_router(admin_router)
 router.include_router(auth_router)
+router.include_router(feed_router)
 router.include_router(posts_router)
 router.include_router(comms_router)
 router.include_router(follows_router)
-router.include_router(feed_router)
+router.include_router(admin_router)
