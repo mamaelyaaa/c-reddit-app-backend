@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends
 from api.admin.auth.schemas import AdminUserUpdateSchema, AdminUserUpdatePartialSchema
 from api.auth.dependencies import SuperuserDep, get_superuser
 from api.auth.service import AuthServiceDep
-from api.auth.users.schemas import UserReadSchema
 from api.auth.views import http_bearer
+from api.users.schemas import UserReadSchema
 
 router = APIRouter(
     prefix="/auth",

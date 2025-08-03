@@ -13,7 +13,6 @@ from sqlalchemy.orm import joinedload
 
 from core.dependencies import SessionDep
 from .models import Comment
-from ..posts.models import Post
 
 logger = logging.getLogger(__name__)
 

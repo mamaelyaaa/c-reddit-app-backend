@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from models import Base
 
 if TYPE_CHECKING:
-    from api.auth.users.models import User
+    from api.users.models import User
     from api.posts.models import Post
 
 

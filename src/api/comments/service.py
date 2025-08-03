@@ -26,7 +26,7 @@ class CommentServiceProtocol(Protocol):
 
     async def get_all_post_comments(
         self, post_id: int, pagination: PaginationSchema
-    ) -> list[CommentReadSchema]:
+    ) -> SearchResponseSchema[CommentReadSchema]:
         pass
 
     async def get_user_post_comment(

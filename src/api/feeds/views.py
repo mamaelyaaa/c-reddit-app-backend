@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 
 from api.auth import ActiveUserDep
 from api.auth.views import http_bearer
-from core.dependencies import PaginationDep
+from core.dependencies import PaginationDep, FiltersDep
 from schemas import SearchResponseSchema
 from .schemas import FeedDetailSchema
 from .service import FeedServiceDep

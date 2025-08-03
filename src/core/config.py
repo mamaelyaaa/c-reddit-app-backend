@@ -66,7 +66,7 @@ class JWTConfig(BaseModel):
 
     # Токен доступа
     access_location: TokenLocation = "headers"
-    access_expires: timedelta = timedelta(minutes=30)
+    access_expires: timedelta = timedelta(minutes=60)
 
     # Токен обновления
     refresh_location: TokenLocation = "cookies"

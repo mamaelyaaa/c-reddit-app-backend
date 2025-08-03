@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
-from api.comments.schemas import CommentReadSchema, CommentSummaryReadSchema
+from api.comments.schemas import CommentSummaryReadSchema
 
 
 class PostBaseSchema(BaseModel):
@@ -18,15 +18,18 @@ class PostCreateSchema(PostBaseSchema):
 class PostReadSchema(PostBaseSchema):
     id: int
 
-    comments_count: int
+    comments: list[CommentSummaryReadSchema]
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class PostDetailSchema(PostReadSchema):
-    comments: list[CommentSummaryReadSchema]
+class PostSummarySchema(PostBaseSchema):
+    id: int
+    comments_count: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostUpdateSchema(PostBaseSchema):

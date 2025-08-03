@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
-from api.auth.users.schemas import UserSummaryReadSchema
 from api.posts.schemas import PostReadSchema
+from api.users.schemas import UserSummaryReadSchema
 
 
 class FeedBaseSchema(BaseModel):

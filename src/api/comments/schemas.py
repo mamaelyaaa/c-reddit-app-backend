@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, ConfigDict
 
-from api.auth.users.schemas import UserSummaryReadSchema
+from api.users.schemas import UserSummaryReadSchema
 
 
 class CommentBaseSchema(BaseModel):

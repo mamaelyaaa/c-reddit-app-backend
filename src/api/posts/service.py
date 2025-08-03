@@ -5,7 +5,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from core.dependencies import SessionDep
-from schemas import PaginationSchema
+from schemas import PaginationSchema, SearchResponseSchema
 from .exceptions import PostNotFoundException, PostAlreadyExist
 from .repository import PostRepositoryProtocol, PostRepositoryDep
 from .schemas import (
@@ -13,7 +13,7 @@ from .schemas import (
     PostReadSchema,
     PostUpdateSchema,
     PostUpdatePartialSchema,
-    PostDetailSchema,
+    PostSummarySchema,
 )
 
 logger = logging.getLogger(__name__)
@@ -24,12 +24,14 @@ class PostServiceProtocol(Protocol):
     async def create_post(self, user_id: int, post_data: PostCreateSchema) -> int:
         pass
 
-    async def get_post_by_post_id(self, user_id: int, post_id: int) -> PostDetailSchema:
+    async def get_post_by_post_id(self, user_id: int, post_id: int) -> PostReadSchema:
         pass
 
     async def get_posts(
-        self, user_id: int, pagination: PaginationSchema
-    ) -> list[PostReadSchema]:
+        self,
+        user_id: int,
+        pagination: PaginationSchema,
+    ) -> SearchResponseSchema[PostSummarySchema]:
         pass
 
     async def update_post(
@@ -71,26 +73,31 @@ class PostService:
         logger.info(f"Пост #%d пользователя #%d успешно создан!", post_id, user_id)
         return post_id
 
-    async def get_post_by_post_id(self, user_id: int, post_id: int) -> PostDetailSchema:
+    async def get_post_by_post_id(self, user_id: int, post_id: int) -> PostReadSchema:
         post = await self.post_repo.get_user_post(user_id=user_id, id=post_id)
         if not post:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
         logger.info(f"Пользователь #%d открыл пост #%d", user_id, post_id)
-        return PostDetailSchema.model_validate(post)
+        return PostReadSchema.model_validate(post)
 
     async def get_posts(
         self,
         user_id: int,
         pagination: PaginationSchema,
-    ) -> list[PostReadSchema]:
+    ) -> SearchResponseSchema[PostSummarySchema]:
         posts = await self.post_repo.get_user_posts(
             user_id,
             limit=pagination.limit,
-            offset=(pagination.page - 1) * pagination.limit,
+            offset=pagination.page_offset,
         )
         logger.info(f"Пользователь #%d успешно вывел свои посты", user_id)
-        return [PostReadSchema.model_validate(post) for post in posts]
+
+        return SearchResponseSchema(
+            detail=[PostSummarySchema.model_validate(post) for post in posts],
+            pagination=pagination,
+            total_found=-1,
+        )
 
     async def update_post(
         self,

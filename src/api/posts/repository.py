@@ -1,5 +1,5 @@
 import logging
-from typing import Protocol, Annotated, Optional, Sequence, Any
+from typing import Protocol, Annotated, Optional, Sequence
 
 from fastapi import Depends
 from sqlalchemy import select, delete

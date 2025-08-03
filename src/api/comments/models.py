@@ -7,8 +7,8 @@ from sqlalchemy.types import Text
 from models import DateMixin, Base
 
 if TYPE_CHECKING:
-    from api.auth.users.models import User
     from api.posts.models import Post
+    from api.users.models import User
 
 
 class Comment(Base, DateMixin):

@@ -3,13 +3,14 @@ from taskiq import AsyncTaskiqTask
 
 from api.auth import ActiveUserDep, http_bearer
 from api.tasks.feed_tasks import create_event_for_users
-from core.dependencies import PaginationDep
+from core.dependencies import PaginationDep, FiltersDep
+from schemas import SearchResponseSchema
 from .schemas import (
     PostCreateSchema,
     PostReadSchema,
     PostUpdateSchema,
     PostUpdatePartialSchema,
-    PostDetailSchema,
+    PostSummarySchema,
 )
 from .service import PostServiceDep
 
@@ -40,7 +41,7 @@ async def create_post(
     return {"post_id": post_id, "task_id": task.task_id}
 
 
-@router.get("/{post_id}", response_model=PostDetailSchema)
+@router.get("/{post_id}", response_model=PostReadSchema)
 async def get_post_by_post_id(
     active_user: ActiveUserDep,
     post_service: PostServiceDep,
@@ -56,7 +57,7 @@ async def get_post_by_post_id(
     return post
 
 
-@router.get("", response_model=list[PostReadSchema])
+@router.get("", response_model=SearchResponseSchema[PostSummarySchema])
 async def get_user_posts(
     active_user: ActiveUserDep,
     post_service: PostServiceDep,

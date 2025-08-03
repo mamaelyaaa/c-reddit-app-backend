@@ -4,7 +4,7 @@ from typing import Protocol, Annotated
 from fastapi import Depends
 
 from api.follows.repository import FollowsRepositoryProtocol, FollowsRepositoryDep
-from schemas import SearchResponseSchema, PaginationSchema
+from schemas import SearchResponseSchema, PaginationSchema, FiltersSchema
 from .repository import FeedRepositoryProtocol, FeedRepositoryDep
 from .schemas import FeedDetailSchema
 
@@ -22,9 +22,7 @@ class FeedServiceProtocol(Protocol):
         pass
 
     async def get_user_events(
-        self,
-        user_id: int,
-        pagination: PaginationSchema,
+        self, user_id: int, pagination: PaginationSchema
     ) -> SearchResponseSchema[FeedDetailSchema]:
         """Получаем автора поста, сам пост, тип поста, пагинацию и общее количество"""
         pass
@@ -65,9 +63,7 @@ class FeedService:
         return
 
     async def get_user_events(
-        self,
-        user_id: int,
-        pagination: PaginationSchema,
+        self, user_id: int, pagination: PaginationSchema
     ) -> SearchResponseSchema[FeedDetailSchema]:
         # Собираем количество всех новостей
         total_events = await self.feed_repo.get_count_events(user_id)

@@ -2,8 +2,8 @@ from typing import Annotated
 
 from fastapi import Request, Depends
 
-from api.auth.service import AuthServiceDep
-from api.auth.users.schemas import UserReadSchema
+from api.users.schemas import UserReadSchema
+from .service import AuthServiceDep
 
 
 async def get_current_user(

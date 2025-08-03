@@ -4,11 +4,11 @@ from typing import Protocol, Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.users.exceptions import UserNotFoundException
+from api.users.repository import UserRepositoryProtocol, UserRepositoryDep
 from core.dependencies import SessionDep
 from .exceptions import FollowAlreadyExists, SelfFollowError, FollowNotFound
 from .repository import FollowsRepositoryProtocol, FollowsRepositoryDep
-from api.auth.users.exceptions import UserNotFoundException
-from api.auth.users.repository import UserRepositoryProtocol, UserRepositoryDep
 
 logger = logging.getLogger(__name__)
 

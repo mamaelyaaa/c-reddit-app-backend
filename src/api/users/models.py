@@ -3,7 +3,6 @@ from typing import Optional, TYPE_CHECKING
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import String
 
-from api.feeds.models import UserFeed
 from models import Base, DateMixin
 
 if TYPE_CHECKING:

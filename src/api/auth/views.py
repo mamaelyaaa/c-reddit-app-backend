@@ -7,16 +7,16 @@ from fastapi import (
 )
 from fastapi.security import HTTPBearer
 
-from schemas import BaseResponseIdSchema
-from .dependencies import ActiveUserDep, CurrentUserDep
-from .jwt.schemas import BearerResponseSchema
-from .service import AuthServiceDep
-from .users.schemas import (
+from api.users.schemas import (
     UserReadSchema,
     UserUpdatePartialSchema,
     UserRegisterSchema,
     UserLoginSchema,
 )
+from schemas import BaseResponseIdSchema
+from .dependencies import ActiveUserDep, CurrentUserDep
+from .schemas import BearerResponseSchema
+from .service import AuthServiceDep
 
 router = APIRouter(prefix="/users", tags=["Авторизация"])
 
@@ -56,12 +56,26 @@ async def refresh_access_token(auth_service: AuthServiceDep, request: Request):
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(http_bearer)],
 )
-async def login_user(
+async def logout_user(
+    active_user: ActiveUserDep,
     auth_service: AuthServiceDep,
-    response: Response,
     request: Request,
 ):
-    await auth_service.logout_user(response, request)
+    await auth_service.logout_user(request)
+    return
+
+
+@router.delete(
+    "/revoke",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(http_bearer)],
+)
+async def revoke_all_sessions(
+    active_user: ActiveUserDep,
+    auth_service: AuthServiceDep,
+    request: Request,
+):
+    await auth_service.revoke_sessions(request)
     return
 
 
@@ -77,18 +91,22 @@ async def current_user_partial_update(
     update_data: UserUpdatePartialSchema,
 ):
     updated_cur_user = await auth_service.update_user(
-        update_user_data=update_data, user_id=active_user.id, partial=True
+        update_user_data=update_data,
+        user_id=active_user.id,
+        partial=True,
     )
     return updated_cur_user
 
 
 @router.put("/me", response_model=UserReadSchema, dependencies=[Depends(http_bearer)])
-async def current_user_partial_update(
+async def current_user_update(
     active_user: ActiveUserDep,
     auth_service: AuthServiceDep,
     update_data: UserUpdatePartialSchema,
 ):
     updated_cur_user = await auth_service.update_user(
-        update_user_data=update_data, user_id=active_user.id, partial=False
+        update_user_data=update_data,
+        user_id=active_user.id,
+        partial=False,
     )
     return updated_cur_user
