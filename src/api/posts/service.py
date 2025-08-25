@@ -86,6 +86,8 @@ class PostService:
         user_id: int,
         pagination: PaginationSchema,
     ) -> SearchResponseSchema[PostSummarySchema]:
+
+        count = await self.post_repo.count_posts(user_id=user_id)
         posts = await self.post_repo.get_user_posts(
             user_id,
             limit=pagination.limit,
@@ -96,7 +98,7 @@ class PostService:
         return SearchResponseSchema(
             detail=[PostSummarySchema.model_validate(post) for post in posts],
             pagination=pagination,
-            total_found=-1,
+            total_found=count,
         )
 
     async def update_post(

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
-from api.posts.schemas import PostReadSchema
+from api.posts.schemas import PostSummarySchema
 from api.users.schemas import UserSummaryReadSchema
 
 
@@ -19,6 +19,6 @@ class FeedReadSchema(FeedBaseSchema):
 
 class FeedDetailSchema(BaseModel):
     author: UserSummaryReadSchema
-    post: PostReadSchema
+    post: PostSummarySchema
 
     model_config = ConfigDict(from_attributes=True)

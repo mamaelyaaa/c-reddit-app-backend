@@ -57,7 +57,7 @@ async def get_post_by_post_id(
     return post
 
 
-@router.get("", response_model=SearchResponseSchema[PostSummarySchema])
+@router.get("", response_model=SearchResponseSchema[PostReadSchema])
 async def get_user_posts(
     active_user: ActiveUserDep,
     post_service: PostServiceDep,

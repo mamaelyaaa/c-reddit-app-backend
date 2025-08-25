@@ -28,7 +28,7 @@ class RepositoryProtocol(Protocol):
 
 
 class SQLAlchemyRepository[Model]:
-    model: Model = None
+    model: type[ModelType] = None
 
     def __init__(self, session: AsyncSession):
         self.session = session

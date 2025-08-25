@@ -133,19 +133,19 @@ def get_user_repository(session: SessionDep) -> UserRepositoryProtocol:
     return UserRepository(session)
 
 
-class UserSQLRepositoryProtocol(RepositoryProtocol, Protocol):
-    pass
+# class UserSQLRepositoryProtocol(RepositoryProtocol, Protocol):
+#     pass
+#
+#
+# class UserAlchemyRepository(SQLAlchemyRepository):
+#     model = User
+#
+#
+# def get_user_sql_repository(session: SessionDep) -> UserSQLRepositoryProtocol:
+#     return UserAlchemyRepository(session)
 
 
-class UserAlchemyRepository(SQLAlchemyRepository):
-    model = User
-
-
-def get_user_sql_repository(session: SessionDep) -> UserSQLRepositoryProtocol:
-    return UserAlchemyRepository(session)
-
-
-UserRepositoryDep = Annotated[UserRepositoryProtocol, Depends(get_user_sql_repository)]
+UserRepositoryDep = Annotated[UserRepositoryProtocol, Depends(get_user_repository)]
 
 
 # UserRepositoryDep = Annotated[UserRepositoryProtocol, Depends(get_user_repository)]

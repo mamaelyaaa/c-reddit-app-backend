@@ -6,10 +6,12 @@ from typing import Protocol, Annotated
 from authx import TokenPayload, RequestToken
 from authx.exceptions import MissingTokenError, JWTDecodeError, AccessTokenRequiredError
 from fastapi import Depends, Request, Response
-from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from api.users.exceptions import UserNotFoundException, UserAlreadyExists
-from api.users.repository import UserRepositoryProtocol, UserRepositoryDep
+from api.users.repository import (
+    UserRepositoryDep,
+    UserRepositoryProtocol,
+)
 from api.users.schemas import (
     UserReadSchema,
     UserRegisterSchema,
@@ -18,16 +20,15 @@ from api.users.schemas import (
     UserUpdatePartialSchema,
 )
 from core import settings
-from core.dependencies import SessionDep
 from core.exceptions import (
     ForbiddenException,
     NotAuthorizedException,
+    BadRequestException,
 )
 from schemas import BaseResponseIdSchema
 from utils.security import verify_passwords, hash_password
 from .exceptions import (
     WrongPasswordException,
-    TooMuchActiveSessionsException,
     ActiveSessionNotFoundException,
     ActiveUserRequiredException,
     SuperuserRequiredException,
@@ -94,11 +95,9 @@ class AuthService:
 
     def __init__(
         self,
-        session: AsyncSession,
         user_repo: UserRepositoryProtocol,
         user_session_repo: UserSessionRepositoryProtocol,
     ):
-        self.session = session
         self.user_repo = user_repo
         self.user_session_repo = user_session_repo
 
@@ -182,16 +181,20 @@ class AuthService:
         return BearerResponseSchema(access_token=access_token)
 
     async def logout_user(self, request: Request) -> None:
-        refresh_token = await self.get_refresh_token_from_cookies(request)
+        # TODO Выводит, что отсутствует токен доступа
 
-        logger.info("Ищем текущую сессию пользователя #%d", refresh_token.sub)
-        session = await self.user_session_repo.get_session(session_id=refresh_token.session_id)
+        token = await self.get_access_token_from_headers(request)
+
+        logger.info("Ищем текущую сессию пользователя #%d", token.sub)
+        session = await self.user_session_repo.get_session(
+            session_id=token.model_dump()["session_id"]
+        )
         if not session:
             logger.error(ActiveSessionNotFoundException.message)
             raise ActiveSessionNotFoundException
 
         await self.user_session_repo.delete_session(session)
-        logger.info(f"Пользователь #%d вышел из системы", int(refresh_token.sub))
+        logger.info(f"Пользователь #%d вышел из системы", int(token.sub))
         return
 
     async def refresh_token(self, request: Request) -> BearerResponseSchema:
@@ -199,38 +202,42 @@ class AuthService:
         token = await self.get_access_token_from_headers(request, validate=False)
 
         # Достаем из токена id сессии
-        verf_token = token.verify(
-            key=settings.jwt.secret_key,
-            algorithms=settings.jwt.algorithm,
-            verify_jwt=False,
-            verify_csrf=False,
-        )
+        try:
+            verf_token = token.verify(
+                key=settings.jwt.secret_key,
+                algorithms=settings.jwt.algorithm,
+                verify_jwt=False,
+                verify_csrf=False,
+            )
 
-        # Получаем текущую сессию
-        session = await self.user_session_repo.get_session(
-            session_id=verf_token.model_dump()["session_id"]
-        )
-        if not session:
-            logger.error(ActiveSessionNotFoundException.message)
-            raise ActiveSessionNotFoundException
+            # Получаем текущую сессию
+            session = await self.user_session_repo.get_session(
+                session_id=verf_token.model_dump()["session_id"]
+            )
+            if not session:
+                logger.error(ActiveSessionNotFoundException.message)
+                raise ActiveSessionNotFoundException
 
-        # Если время сессии истекло - удаляем
-        # if session.expired_at >= datetime.now():
-        #     await self.user_session_repo.delete_session(session)
-        #     logger.error(ActiveSessionNotFoundException.message)
-        #     raise ActiveSessionNotFoundException
+            # Создаем новый токен доступа с этой же сессией
+            new_access = security.create_access_token(
+                uid=str(session.user_id),
+                expiry=settings.jwt.access_expires,
+                data={"session_id": verf_token.model_dump()["session_id"]},
+            )
+            return BearerResponseSchema(access_token=new_access)
 
-        # Создаем новый токен доступа с этой же сессией
-        new_access = security.create_access_token(
-            uid=str(session.user_id),
-            expiry=settings.jwt.access_expires,
-            data={"session_id": verf_token.model_dump()["session_id"]},
-        )
-        return BearerResponseSchema(access_token=new_access)
+        except JWTDecodeError:
+            logger.error("Невалидный токен для расшифровки")
+            raise NotAuthorizedException("Невалидный токен для расшифровки")
 
     async def revoke_sessions(self, request: Request) -> None:
         # Приходит верифицированный токен
         token = await self.get_access_token_from_headers(request)
+
+        sessions = await self.user_session_repo.get_sessions(user_id=int(token.sub))
+        if not sessions:
+            logger.error("Нет активных сессий")
+            raise BadRequestException("Нет активных сессий")
 
         # Находим все активные сессии пользователя и удаляем
         await self.user_session_repo.delete_sessions(user_id=int(token.sub))
@@ -335,11 +342,10 @@ class AuthService:
 
 
 async def get_auth_service(
-    session: SessionDep,
     user_repo: UserRepositoryDep,
     user_session_repo: UserSessionRepositoryDep,
 ) -> AuthServiceProtocol:
-    return AuthService(session, user_repo, user_session_repo)
+    return AuthService(user_repo, user_session_repo)
 
 
 AuthServiceDep = Annotated[AuthServiceProtocol, Depends(get_auth_service)]

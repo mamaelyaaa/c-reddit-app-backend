@@ -2,7 +2,7 @@ import logging
 from typing import Protocol, Annotated, Optional, Sequence
 
 from fastapi import Depends
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -37,6 +37,9 @@ class PostRepositoryProtocol(Protocol):
         pass
 
     async def check_post_exists(self, user_id: int, title: str) -> bool:
+        pass
+
+    async def count_posts(self, *args, **kwargs) -> int:
         pass
 
     async def update_post(
@@ -111,6 +114,11 @@ class PostRepository:
         query = select(Post).filter_by(user_id=user_id, title=title)
         res = await self.session.scalar(query)
         return True if res else False
+
+    async def count_posts(self, *args, **kwargs) -> int:
+        query = select(func.count(Post.id)).filter_by(**kwargs)
+        res = await self.session.execute(query)
+        return res.scalar_one()
 
     async def increment_post_comments(self, post: Post) -> int:
         logger.debug("Обновляем количество комментариев для поста #%d ...", post.id)
