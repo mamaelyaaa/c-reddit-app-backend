@@ -1,20 +1,30 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Annotated
 
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    ConfigDict,
+    AfterValidator,
+)
+
+from utils.security import validate_password_complexity
 
 
-class UserRegisterSchema(BaseModel):
+class UserBaseSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     username: str
     email: EmailStr
-    password: str
+    password: Annotated[str, AfterValidator(validate_password_complexity)]
+
+
+class UserRegisterSchema(UserBaseSchema):
     is_superuser: bool = False
 
 
-class UserLoginSchema(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
+class UserLoginSchema(UserBaseSchema):
+    pass
 
 
 class UserReadSchema(BaseModel):

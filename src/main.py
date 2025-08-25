@@ -1,10 +1,10 @@
 import logging
-import time
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.responses import ORJSONResponse
+from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
 
 from api import router as main_router
@@ -56,6 +56,24 @@ async def get_db_connection(session: SessionDep):
 @app.exception_handler(AppException)
 async def handle_app_exception(request: Request, exc: AppException):
     return ORJSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = []
+    for error in exc.errors():
+        errors.append(
+            {
+                "field": ".".join(str(loc) for loc in error["loc"]),
+                "message": error["msg"],
+                "type": error["type"],
+            }
+        )
+
+    return ORJSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": "Ошибка валидации данных", "errors": errors},
+    )
 
 
 # @app.middleware("http")

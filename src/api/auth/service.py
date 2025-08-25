@@ -43,6 +43,9 @@ from .security import security
 logger = logging.getLogger(__name__)
 
 
+# TODO 1. Исправить ошибку при /login когда почта не подходит, или когда юзернейм не подходит
+
+
 class AuthServiceProtocol(Protocol):
 
     async def register_user(
