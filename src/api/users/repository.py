@@ -146,6 +146,3 @@ def get_user_repository(session: SessionDep) -> UserRepositoryProtocol:
 
 
 UserRepositoryDep = Annotated[UserRepositoryProtocol, Depends(get_user_repository)]
-
-
-# UserRepositoryDep = Annotated[UserRepositoryProtocol, Depends(get_user_repository)]

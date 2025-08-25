@@ -134,8 +134,13 @@ class AuthService:
 
         user = await self.user_repo.get_user(email=user_data.email)
         if not user:
-            logger.error(UserNotFoundException.message)
-            raise UserNotFoundException
+            logger.error("Неправильная почта")
+            raise NotAuthorizedException("Неправильная почта")
+
+        user = await self.user_repo.get_user(username=user_data.username)
+        if not user:
+            logger.error("Неправильный юзернейм")
+            raise NotAuthorizedException("Неправильный юзернейм")
 
         logger.debug("Проверяем схожесть пароля ...")
 

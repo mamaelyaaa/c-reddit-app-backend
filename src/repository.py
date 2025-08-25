@@ -2,11 +2,11 @@ from typing import Protocol, Any, Optional, Sequence, TypeVar
 
 from sqlalchemy import select, Result
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase, DeclarativeMeta
+from sqlalchemy.orm import DeclarativeBase
 
 from core.dependencies import SessionDep
 
-ModelType = TypeVar("ModelType", bound=DeclarativeMeta)
+ModelType = TypeVar("ModelType", bound=DeclarativeBase)
 
 
 class RepositoryProtocol(Protocol):
@@ -28,7 +28,7 @@ class RepositoryProtocol(Protocol):
 
 
 class SQLAlchemyRepository[Model]:
-    model: type[ModelType] = None
+    model: Model
 
     def __init__(self, session: AsyncSession):
         self.session = session

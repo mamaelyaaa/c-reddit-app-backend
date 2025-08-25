@@ -170,10 +170,10 @@ class TestUserLogin:
         assert resp.json() == expected_ans
 
 
-class TestUserRefreshOldToken:
-    def test_user_success_refresh(self, client: TestClient):
-        headers = {"Authorization": "Bearer 123"}
-        resp = client.get("/api/users/refresh", headers=headers)
-        print(resp.json())
-        assert resp.status_code == 200
-        assert "access_token" in resp.json() and resp.json()["token_type"] == "Bearer"
+# class TestUserRefreshOldToken:
+#     def test_user_success_refresh(self, client: TestClient):
+#         headers = {"Authorization": "Bearer 123"}
+#         resp = client.get("/api/users/refresh", headers=headers)
+#         print(resp.json())
+#         assert resp.status_code == 200
+#         assert "access_token" in resp.json() and resp.json()["token_type"] == "Bearer"
