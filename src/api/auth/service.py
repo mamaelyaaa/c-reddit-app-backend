@@ -181,8 +181,6 @@ class AuthService:
         return BearerResponseSchema(access_token=access_token)
 
     async def logout_user(self, request: Request) -> None:
-        # TODO Выводит, что отсутствует токен доступа
-
         token = await self.get_access_token_from_headers(request)
 
         logger.info("Ищем текущую сессию пользователя #%d", token.sub)

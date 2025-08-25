@@ -52,12 +52,13 @@ async def get_post_by_post_id(
     Дополнительно: получение комментариев под постом
     """
     post = await post_service.get_post_by_post_id(
-        user_id=active_user.id, post_id=post_id
+        user_id=active_user.id,
+        post_id=post_id,
     )
     return post
 
 
-@router.get("", response_model=SearchResponseSchema[PostReadSchema])
+@router.get("", response_model=SearchResponseSchema[PostSummarySchema])
 async def get_user_posts(
     active_user: ActiveUserDep,
     post_service: PostServiceDep,

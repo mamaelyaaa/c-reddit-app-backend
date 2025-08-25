@@ -10,6 +10,7 @@ from core.dependencies import SessionDep
 from core.exceptions import BadValidationException
 from .models import Post
 from .schemas import PostUpdateSchema, PostUpdatePartialSchema, PostCreateSchema
+from ..comments.models import Comment
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,11 @@ class PostRepository:
 
     async def get_user_post(self, *args, **kwargs) -> Optional[Post]:
         logger.debug(f"Ищем пост с фильтрами {kwargs} ...")
-        query = select(Post).options(selectinload(Post.comments)).filter_by(**kwargs)
+        query = (
+            select(Post)
+            .options(selectinload(Post.comments).joinedload(Comment.author))
+            .filter_by(**kwargs)
+        )
         res = await self.session.execute(query)
         return res.scalar_one_or_none()
 
