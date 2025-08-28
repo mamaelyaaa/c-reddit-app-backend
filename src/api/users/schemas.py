@@ -6,24 +6,31 @@ from pydantic import (
     EmailStr,
     ConfigDict,
     AfterValidator,
+    SecretStr,
 )
 
 from utils.security import validate_password_complexity
 
 
 class UserBaseSchema(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    """Базовая схема для пользователя"""
 
     username: str
     email: EmailStr
-    password: Annotated[str, AfterValidator(validate_password_complexity)]
+    password: Annotated[SecretStr, AfterValidator(validate_password_complexity)]
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class UserRegisterSchema(UserBaseSchema):
+    """Схема для регистрации пользователя"""
+
     is_superuser: bool = False
 
 
 class UserLoginSchema(UserBaseSchema):
+    """Схема для аутентификации пользователя"""
+
     pass
 
 
@@ -37,6 +44,7 @@ class UserReadSchema(BaseModel):
     updated_at: datetime
     is_active: bool
     is_superuser: bool = False
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -45,18 +53,21 @@ class UserSummaryReadSchema(BaseModel):
 
     id: int
     username: str
-    email: EmailStr
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class UserUpdateSchema(BaseModel):
+    """Схема для обновления пользователя"""
+
     username: str
     email: EmailStr
     model_config = ConfigDict(from_attributes=True)
 
 
 class UserUpdatePartialSchema(BaseModel):
+    """Схема для частичного обновления пользователя"""
+
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     model_config = ConfigDict(from_attributes=True)

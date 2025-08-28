@@ -1,17 +1,13 @@
-import asyncio
 from typing import Generator, Any
 
 import pytest
 import pytest_asyncio
-
-from fastapi.testclient import TestClient
-
 from alembic import command
 from alembic.config import Config
-from httpx import AsyncClient, ASGITransport
+from fastapi.testclient import TestClient
 
-from core import settings, db_helper
-from main import app
+from src.core import settings, db_helper
+from src.main import app
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
@@ -47,6 +43,24 @@ def apply_migrations():
 
 
 @pytest.fixture(scope="session")
-def client() -> Generator[TestClient, Any, None]:
+def client(apply_migrations) -> Generator[TestClient, Any, None]:
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture(scope="package")
+def access_token(client):
+    user_data = {
+        "email": "user123@example.com",
+        "password": "qwerty123",
+        "username": "user",
+    }
+    resp = client.post("/api/users/login", json=user_data)
+    assert resp.status_code == 200
+    yield resp.json()["access_token"]
+
+
+@pytest.fixture(scope="package")
+def auth_client_headers(access_token: str) -> dict[str, str]:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    return headers

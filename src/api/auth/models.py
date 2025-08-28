@@ -11,7 +11,7 @@ class UserSession(Base):
     __tablename__ = "users_sessions"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    session_id: Mapped[str] = mapped_column(Uuid)
+    fingerprint: Mapped[str] = mapped_column(Uuid)
     refresh_token: Mapped[str] = mapped_column(index=True, unique=True)
 
     expired_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

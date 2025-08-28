@@ -2,9 +2,9 @@ from typing import Protocol, Annotated
 
 from fastapi import Depends
 
-from api.posts.repository import PostRepositoryProtocol, PostRepositoryDep
+from api.posts.repository import PostRepositoryDep, PostRepositoryProtocol
 from api.posts.schemas import PostSummarySchema
-from api.users.repository import UserRepositoryProtocol, UserRepositoryDep
+from api.users.repository import UserRepositoryDep, UserRepositoryProtocol
 from api.users.schemas import UserSummaryReadSchema
 from schemas import (
     PaginationSchema,
@@ -40,10 +40,10 @@ class SearchServiceImpl:
 
     async def search_users(
         self, filters: FiltersSchema, pagination: PaginationSchema
-    ) -> SearchResponseSchemaWithFilters[UserSummaryReadSchema]:
-        total_users = await self.user_repo.count(filters.query)
+    ) -> SearchResponseSchemaWithFilters:
 
-        users = await self.user_repo.get_users(
+        total_users = await self.user_repo.count(filters.query)
+        users = await self.user_repo.search_users(
             limit=pagination.limit,
             offset=pagination.page_offset,
             order_by=filters.order_by,
@@ -64,7 +64,8 @@ class SearchServiceImpl:
 
 
 def get_search_service(
-    user_repo: UserRepositoryDep, post_repo: PostRepositoryDep
+    user_repo: UserRepositoryDep,
+    post_repo: PostRepositoryDep,
 ) -> SearchServiceProtocol:
     return SearchServiceImpl(user_repo, post_repo)
 

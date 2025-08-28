@@ -12,7 +12,9 @@ router = APIRouter(
 )
 
 
-@router.get("/users", response_model=SearchResponseSchemaWithFilters[UserSummaryReadSchema])
+@router.get(
+    "/users", response_model=SearchResponseSchemaWithFilters[UserSummaryReadSchema]
+)
 async def search_users(
     active_user: ActiveUserDep,
     search_service: SearchServiceDep,

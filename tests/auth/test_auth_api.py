@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-class TestUserRegister:
+class TestAuthRegister:
     def test_user_success_register(self, client: TestClient):
         user_data = {
             "email": "user123@example.com",
@@ -111,7 +111,7 @@ class TestUserRegister:
         assert resp.json() == expected_ans
 
 
-class TestUserLogin:
+class TestAuthLogin:
     def test_user_success_login(self, client: TestClient):
         user_data = {
             "email": "user123@example.com",
@@ -133,7 +133,7 @@ class TestUserLogin:
                     "username": "user",
                 },
                 401,
-                {"detail": "Неправильная почта"},
+                {"detail": "Неправильная почта или юзернейм"},
             ),
             (
                 # 2. Неправильный пароль
@@ -153,7 +153,7 @@ class TestUserLogin:
                     "username": "123",
                 },
                 401,
-                {"detail": "Неправильный юзернейм"},
+                {"detail": "Неправильная почта или юзернейм"},
             ),
         ],
     )
@@ -165,15 +165,88 @@ class TestUserLogin:
         expected_ans: dict[str, Any],
     ):
         resp = client.post("/api/users/login", json=data)
-        print(resp.json())
         assert resp.status_code == status_code
         assert resp.json() == expected_ans
 
 
-# class TestUserRefreshOldToken:
-#     def test_user_success_refresh(self, client: TestClient):
-#         headers = {"Authorization": "Bearer 123"}
-#         resp = client.get("/api/users/refresh", headers=headers)
-#         print(resp.json())
-#         assert resp.status_code == 200
-#         assert "access_token" in resp.json() and resp.json()["token_type"] == "Bearer"
+@pytest.fixture(scope="session")
+def access_token(client: TestClient) -> str:
+    user_data = {
+        "email": "user123@example.com",
+        "password": "qwerty123",
+        "username": "user",
+    }
+    resp = client.post("/api/users/login", json=user_data)
+    assert resp.status_code == 200
+    return resp.json()["access_token"]
+
+
+class TestAuthRefreshOldToken:
+    def test_user_success_refresh(
+        self,
+        client: TestClient,
+        auth_client_headers: dict[str, str],
+    ):
+        resp = client.get("/api/users/refresh", headers=auth_client_headers)
+        assert resp.status_code == 200
+        assert resp.json()["token_type"] == "Bearer"
+        assert resp.json()["access_token"] != auth_client_headers["Authorization"]
+
+    @pytest.mark.parametrize(
+        ["headers", "status_code", "expected_ans"],
+        [
+            (
+                # 1. Невалидный для декодирования токен
+                {
+                    "Authorization": f"Bearer 123",
+                },
+                401,
+                {"detail": "Невалидный токен для расшифровки"},
+            ),
+            (
+                # 2. Невалидный заголовок (ключ)
+                {
+                    "Authorization-Header": f"Bearer {access_token}",
+                },
+                403,
+                {"detail": "Отсутствует токен доступа в запросе к платформе"},
+            ),
+            (
+                # 3. Невалидный заголовок (отсутствие типа токена)
+                {
+                    "Authorization": f"{access_token}",
+                },
+                401,
+                {"detail": "Невалидный токен для расшифровки"},
+            ),
+            (
+                # 4. Отсутствие заголовков
+                {},
+                403,
+                {"detail": "Отсутствует токен доступа в запросе к платформе"},
+            ),
+        ],
+    )
+    def test_user_refresh(
+        self,
+        client: TestClient,
+        access_token: str,
+        headers: dict[str, Any],
+        status_code: int,
+        expected_ans: dict[str, Any],
+    ):
+        resp = client.get("/api/users/refresh", headers=headers)
+        assert resp.status_code == status_code
+        assert resp.json() == expected_ans
+
+
+class TestAuthLogout:
+    pass
+
+
+class TestAuthRevokeTokens:
+    pass
+
+
+class TestAuthGet:
+    pass

@@ -29,7 +29,9 @@ class Post(Base, DateMixin):
 
     # Отношения
     user: Mapped["User"] = relationship(back_populates="posts")
-    comments: Mapped[list["Comment"]] = relationship(back_populates="post")
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="post", cascade="all,delete"
+    )
 
     # Дополнительно
     repr_cols_num = 2

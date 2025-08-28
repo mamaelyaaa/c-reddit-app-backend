@@ -6,6 +6,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.dependencies import SessionDep
+from repository import RepositoryProtocol, SQLAlchemyRepository
 from .models import Follow
 
 logger = logging.getLogger(__name__)
@@ -73,10 +74,25 @@ class FollowsRepository:
         return follows.all()
 
 
-async def get_follows_repository(session: SessionDep) -> FollowsRepositoryProtocol:
-    return FollowsRepository(session)
+class IFollowRepositoryProtocol(RepositoryProtocol[Follow], Protocol):
+    async def get_subs_ids(self, user_id: int) -> Sequence[int]:
+        pass
+
+
+class IFollowRepository(SQLAlchemyRepository):
+    model = Follow
+
+    async def get_subs_ids(self, user_id: int) -> Sequence[int]:
+        logger.debug(f"Ищем уникальные id подписчиков пользователя {user_id = } ...")
+        query = select(Follow.follower_id).filter_by(followee_id=user_id)
+        follows = await self.session.scalars(query)
+        return follows.all()
+
+
+async def get_follows_repository(session: SessionDep) -> IFollowRepositoryProtocol:
+    return IFollowRepository(session)
 
 
 FollowsRepositoryDep = Annotated[
-    FollowsRepositoryProtocol, Depends(get_follows_repository)
+    IFollowRepositoryProtocol, Depends(get_follows_repository)
 ]

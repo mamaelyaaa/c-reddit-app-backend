@@ -2,13 +2,12 @@ from typing import Any
 
 import pytest
 
-from api.users.repository import UserRepository, UserRepositoryProtocol
-from api.users.schemas import UserRegisterSchema
+from api.users.repository import UserRepositoryImpl, UserRepositoryProtocol
 
 
 @pytest.fixture(scope="package")
 def user_repository(db_session) -> UserRepositoryProtocol:
-    return UserRepository(db_session)
+    return UserRepositoryImpl(db_session)
 
 
 @pytest.fixture

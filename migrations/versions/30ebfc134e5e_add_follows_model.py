@@ -37,9 +37,7 @@ def upgrade() -> None:
             ["users.id"],
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
-            "follower_id", "followee_id", name="unique_follows"
-        ),
+        sa.UniqueConstraint("follower_id", "followee_id", name="unique_follows"),
     )
     op.create_index(op.f("ix_follows_id"), "follows", ["id"], unique=False)
 

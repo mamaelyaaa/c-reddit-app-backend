@@ -16,5 +16,7 @@ async def get_user_events(
     feed_service: FeedServiceDep,
     pagination: PaginationDep,
 ):
-    events = await feed_service.get_user_events(user_id=active_user.id, pagination=pagination)
+    events = await feed_service.get_user_events(
+        user_id=active_user.id, pagination=pagination
+    )
     return events

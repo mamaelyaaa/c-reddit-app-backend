@@ -38,7 +38,7 @@ class Database:
         )
 
     async def dispose(self) -> None:
-        logger.debug("Подключение к базе данных разорвано")
+        logger.info("Подключение к базе данных разорвано")
         await self._engine.dispose()
 
     async def session_getter(self) -> AsyncGenerator[AsyncSession, None]:
@@ -51,5 +51,6 @@ class Database:
     @property
     def get_session_factory(self):
         return self._session_factory
+
 
 db_helper = Database(url=str(settings.db.POSTGRES_DSN), echo=bool(settings.db.echo))

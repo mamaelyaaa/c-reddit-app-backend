@@ -15,9 +15,6 @@ async def verify_passwords(password: str, hash_pwd: str) -> bool:
 
 
 def validate_password_complexity(password: str) -> str:
-    if len(password) <= 6:
+    if len(password) < 6:
         raise BadRequestException("Пароль должен содержать не менее 6 символов")
     return password
-
-
-PasswordStr = Annotated[str, AfterValidator(validate_password_complexity)]

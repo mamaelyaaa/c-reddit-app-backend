@@ -3,7 +3,8 @@ from typing import Protocol, Annotated
 
 from fastapi import Depends
 
-from api.posts.repository import PostRepositoryProtocol, PostRepositoryDep
+from api.posts.exceptions import PostNotFoundException
+from api.posts.repository import PostRepositoryDep
 from core.exceptions import NotFoundException
 from schemas import PaginationSchema, BaseResponseIdSchema, SearchResponseSchema
 from .models import Comment
@@ -12,7 +13,6 @@ from .schemas import (
     CommentReadSchema,
     CommentUpdateSchema,
 )
-from ..posts.exceptions import PostNotFoundException
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class CommentServiceImpl:
     def __init__(
         self,
         comm_repo: CommentRepositoryProtocol,
-        post_repo: PostRepositoryProtocol,
+        post_repo: PostRepositoryDep,
     ):
         self.comm_repo = comm_repo
         self.post_repo = post_repo
@@ -68,15 +68,17 @@ class CommentServiceImpl:
     async def create_comment(
         self, user_id: int, post_id: int, content: str
     ) -> BaseResponseIdSchema:
-        post = await self.post_repo.get_user_post(user_id, id=post_id)
+        post = await self.post_repo.read_one(user_id=user_id, id=post_id)
         if not post:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
 
         comm_id = await self.comm_repo.create(
-            user_id=user_id,
-            post_id=post_id,
-            content=content,
+            {
+                "user_id": user_id,
+                "post_id": post_id,
+                "content": content,
+            }
         )
         await self.post_repo.increment_post_comments(post)
 
@@ -86,7 +88,7 @@ class CommentServiceImpl:
     async def get_all_post_comments(
         self, post_id: int, pagination: PaginationSchema
     ) -> SearchResponseSchema[CommentReadSchema]:
-        post = await self.post_repo.get_user_post(id=post_id)
+        post = await self.post_repo.read_one(id=post_id)
         if not post:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
@@ -109,13 +111,13 @@ class CommentServiceImpl:
         return SearchResponseSchema(
             detail=[CommentReadSchema.model_validate(comm) for comm in comments],
             pagination=pagination,
-            total_found=total_count
+            total_found=total_count,
         )
 
     async def get_user_post_comment(
         self, post_id: int, comment_id: int
     ) -> CommentReadSchema:
-        post = await self.post_repo.get_user_post(id=post_id)
+        post = await self.post_repo.read_one(id=post_id)
         if not post:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
@@ -136,7 +138,7 @@ class CommentServiceImpl:
         comment_id: int,
         upd_comm: CommentUpdateSchema,
     ) -> CommentReadSchema:
-        post = await self.post_repo.get_user_post(id=post_id)
+        post = await self.post_repo.read_one(id=post_id)
         if not post:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
@@ -146,8 +148,8 @@ class CommentServiceImpl:
             comment_id=comment_id,
         )
         upd_comment = await self.comm_repo.update(
-            comment=comment,
-            upd_comm=upd_comm.content,
+            model=comment,
+            upd={"content": upd_comm.content},
         )
         logger.info(
             "Пользователь обновил комментарий #%d под постом #%d",
@@ -157,7 +159,7 @@ class CommentServiceImpl:
         return CommentReadSchema.model_validate(upd_comment)
 
     async def delete_user_comment(self, post_id: int, user_id: int) -> None:
-        post = await self.post_repo.get_user_post(user_id, id=post_id)
+        post = await self.post_repo.read_one(user_id=user_id, id=post_id)
         if not post:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
@@ -166,7 +168,8 @@ class CommentServiceImpl:
 
 
 async def get_comment_service(
-    comm_repo: CommentRepositoryDep, post_repo: PostRepositoryDep
+    comm_repo: CommentRepositoryDep,
+    post_repo: PostRepositoryDep,
 ) -> CommentServiceProtocol:
     return CommentServiceImpl(comm_repo, post_repo)
 

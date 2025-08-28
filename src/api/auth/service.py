@@ -7,7 +7,7 @@ from authx import TokenPayload, RequestToken
 from authx.exceptions import MissingTokenError, JWTDecodeError, AccessTokenRequiredError
 from fastapi import Depends, Request, Response
 
-from api.users.exceptions import UserNotFoundException, UserAlreadyExists
+from api.users.exceptions import UserAlreadyExists
 from api.users.repository import (
     UserRepositoryDep,
     UserRepositoryProtocol,
@@ -16,8 +16,6 @@ from api.users.schemas import (
     UserReadSchema,
     UserRegisterSchema,
     UserLoginSchema,
-    UserUpdateSchema,
-    UserUpdatePartialSchema,
 )
 from core import settings
 from core.exceptions import (
@@ -33,17 +31,11 @@ from .exceptions import (
     ActiveUserRequiredException,
     SuperuserRequiredException,
 )
-from .repository import (
-    UserSessionRepositoryProtocol,
-    UserSessionRepositoryDep,
-)
+from .repository import UserSessionRepositoryDep, UserSessionRepositoryProtocol
 from .schemas import BearerResponseSchema
 from .security import security
 
 logger = logging.getLogger(__name__)
-
-
-# TODO 1. Исправить ошибку при /login когда почта не подходит, или когда юзернейм не подходит
 
 
 class AuthServiceProtocol(Protocol):
@@ -60,7 +52,7 @@ class AuthServiceProtocol(Protocol):
         """Аутентификация пользователя в системе"""
         pass
 
-    async def logout_user(self, request: Request) -> None:
+    async def logout_user(self, request: Request, response: Response) -> None:
         """Выход из сессии пользователя"""
         pass
 
@@ -68,7 +60,7 @@ class AuthServiceProtocol(Protocol):
         """Обновление неактивного токена доступа через токен обновления"""
         pass
 
-    async def revoke_sessions(self, request: Request) -> None:
+    async def revoke_sessions(self, request: Request, response: Response) -> None:
         """Удаление всех активных сессий текущего пользователя"""
         pass
 
@@ -82,15 +74,6 @@ class AuthServiceProtocol(Protocol):
 
     async def get_superuser(self, request: Request) -> UserReadSchema:
         """Получение текущего пользователя (со статусом 'супер юзер')"""
-        pass
-
-    async def update_user(
-        self,
-        update_user_data: UserUpdateSchema | UserUpdatePartialSchema,
-        user_id: int,
-        partial: bool,
-    ) -> UserReadSchema:
-        """Частичное и полное обновление пользователя"""
         pass
 
 
@@ -107,63 +90,59 @@ class AuthService:
     async def register_user(
         self, user_data: UserRegisterSchema
     ) -> BaseResponseIdSchema:
-        logger.info("Регистрируем пользователя '%s'", user_data.username)
-
-        exists_user = await self.user_repo.check_users_exists(
+        logger.debug("Регистрируем пользователя '%s'", user_data.username)
+        exists_user = await self.user_repo.check_union_exists(
             username=user_data.username, email=str(user_data.email)
         )
         if exists_user:
             logger.error(UserAlreadyExists.message)
             raise UserAlreadyExists
 
-        data = UserRegisterSchema(
-            username=user_data.username,
-            email=user_data.email,
-            password=await hash_password(user_data.password),
-            is_superuser=user_data.is_superuser,
-        )
-
-        user_id = await self.user_repo.add_user(user_data=data)
-        logger.info(f"Пользователь '%s' успешно зарегистрирован!", data.username)
+        data = {
+            "username": user_data.username,
+            "email": user_data.email,
+            "password": await hash_password(user_data.password.get_secret_value()),
+            "is_superuser": user_data.is_superuser,
+        }
+        user_id = await self.user_repo.create(data)
+        logger.info(f"Пользователь '%s' успешно зарегистрирован!", data["username"])
         return BaseResponseIdSchema(id=user_id)
 
     async def login_user(
-        self, user_data: UserLoginSchema, response: Response
+        self,
+        user_data: UserLoginSchema,
+        response: Response,
     ) -> BearerResponseSchema:
-        logger.info("Пользователь '%s' пытается войти в систему", user_data.username)
+        logger.debug("Пользователь '%s' пытается войти в систему", user_data.username)
 
-        user = await self.user_repo.get_user(email=user_data.email)
+        user = await self.user_repo.read_one(
+            username=user_data.username, email=user_data.email
+        )
         if not user:
-            logger.error("Неправильная почта")
-            raise NotAuthorizedException("Неправильная почта")
-
-        user = await self.user_repo.get_user(username=user_data.username)
-        if not user:
-            logger.error("Неправильный юзернейм")
-            raise NotAuthorizedException("Неправильный юзернейм")
+            logger.error("Неправильная почта или юзернейм")
+            raise NotAuthorizedException("Неправильная почта или юзернейм")
 
         logger.debug("Проверяем схожесть пароля ...")
 
         if not await verify_passwords(
-            password=user_data.password,
+            password=user_data.password.get_secret_value(),
             hash_pwd=user.password,
         ):
             logger.error(WrongPasswordException.message)
             raise WrongPasswordException
 
-        logger.info("Создаем токены доступа и обновления")
+        logger.debug("Создаем новые токены доступа и обновления")
 
-        session_id = str(uuid.uuid4())
-
+        fingerprint = str(uuid.uuid4())
         access_token = security.create_access_token(
             uid=str(user.id),
             expiry=settings.jwt.access_expires,
-            data={"session_id": session_id},
+            data={"fingerprint": fingerprint},
         )
         refresh_token = security.create_refresh_token(
             uid=str(user.id),
             expiry=settings.jwt.refresh_expires,
-            data={"session_id": session_id},
+            data={"fingerprint": fingerprint},
         )
         security.set_refresh_cookies(
             token=refresh_token,
@@ -179,79 +158,66 @@ class AuthService:
         #     raise TooMuchActiveSessionsException
 
         # Создаем новую сессию для пользователя
-        await self.user_session_repo.create_session(
-            user_id=user.id,
-            session_id=session_id,
-            refresh_token=refresh_token,
-            expired_at=datetime.now() + settings.jwt.refresh_expires,
+        await self.user_session_repo.create(
+            {
+                "user_id": user.id,
+                "fingerprint": fingerprint,
+                "refresh_token": refresh_token,
+                "expired_at": datetime.now() + settings.jwt.refresh_expires,
+            }
         )
         logger.info(f"Пользователь '%s' успешно аутентифицировался!", user.username)
         return BearerResponseSchema(access_token=access_token)
 
-    async def logout_user(self, request: Request) -> None:
+    async def logout_user(self, request: Request, response: Response) -> None:
         token = await self.get_access_token_from_headers(request)
+        logger.debug("Ищем текущую сессию пользователя #%d", int(token.sub))
 
-        logger.info("Ищем текущую сессию пользователя #%d", token.sub)
-        session = await self.user_session_repo.get_session(
-            session_id=token.model_dump()["session_id"]
+        session = await self.user_session_repo.read_one(
+            fingerprint=token.model_dump()["fingerprint"]
         )
         if not session:
             logger.error(ActiveSessionNotFoundException.message)
             raise ActiveSessionNotFoundException
 
-        await self.user_session_repo.delete_session(session)
+        await self.user_session_repo.delete(session)
+        security.unset_cookies(response)
         logger.info(f"Пользователь #%d вышел из системы", int(token.sub))
         return
 
     async def refresh_token(self, request: Request) -> BearerResponseSchema:
-        # Приходит неактуальный токен
-        token = await self.get_access_token_from_headers(request, validate=False)
+        # Проверяем токен обновления в куки
+        refr_token = await self.get_refresh_token_from_cookies(request)
+        new_access = security.create_access_token(
+            uid=str(refr_token.sub),
+            expiry=settings.jwt.access_expires,
+            data={"fingerprint": refr_token.model_dump()["fingerprint"]},
+        )
+        logger.info("Пользователь #%d обновил токен доступа", int(refr_token.sub))
+        return BearerResponseSchema(access_token=new_access)
 
-        # Достаем из токена id сессии
-        try:
-            verf_token = token.verify(
-                key=settings.jwt.secret_key,
-                algorithms=settings.jwt.algorithm,
-                verify_jwt=False,
-                verify_csrf=False,
-            )
-
-            # Получаем текущую сессию
-            session = await self.user_session_repo.get_session(
-                session_id=verf_token.model_dump()["session_id"]
-            )
-            if not session:
-                logger.error(ActiveSessionNotFoundException.message)
-                raise ActiveSessionNotFoundException
-
-            # Создаем новый токен доступа с этой же сессией
-            new_access = security.create_access_token(
-                uid=str(session.user_id),
-                expiry=settings.jwt.access_expires,
-                data={"session_id": verf_token.model_dump()["session_id"]},
-            )
-            return BearerResponseSchema(access_token=new_access)
-
-        except JWTDecodeError:
-            logger.error("Невалидный токен для расшифровки")
-            raise NotAuthorizedException("Невалидный токен для расшифровки")
-
-    async def revoke_sessions(self, request: Request) -> None:
+    async def revoke_sessions(self, request: Request, response: Response) -> None:
         # Приходит верифицированный токен
         token = await self.get_access_token_from_headers(request)
-
-        sessions = await self.user_session_repo.get_sessions(user_id=int(token.sub))
+        sessions = await self.user_session_repo.read_all(
+            user_id=int(token.sub),
+            limit=None,
+            offset=None,
+        )
         if not sessions:
             logger.error("Нет активных сессий")
             raise BadRequestException("Нет активных сессий")
 
         # Находим все активные сессии пользователя и удаляем
-        await self.user_session_repo.delete_sessions(user_id=int(token.sub))
+        await self.user_session_repo.delete_all(user_id=int(token.sub))
+        security.unset_cookies(response)
+        logger.info("Пользователь #%d вышел со всех активных сессий", int(token.sub))
         return
 
     async def get_current_user(self, request: Request) -> UserReadSchema:
         token = await self.get_access_token_from_headers(request)
-        current_user = await self.user_repo.get_user(id=int(token.sub))
+        logger.info("Пользователь #%d получает информацию о себе", int(token.sub))
+        current_user = await self.user_repo.read_one(id=int(token.sub))
         return UserReadSchema.model_validate(current_user)
 
     async def get_active_user(self, request: Request) -> UserReadSchema:
@@ -267,34 +233,6 @@ class AuthService:
             logger.error(SuperuserRequiredException.message)
             raise SuperuserRequiredException
         return active_user
-
-    async def update_user(
-        self,
-        update_user_data: UserUpdateSchema | UserUpdatePartialSchema,
-        user_id: int,
-        partial: bool,
-    ) -> UserReadSchema:
-
-        user = await self.user_repo.get_user(id=user_id)
-        if not user:
-            raise UserNotFoundException
-
-        # Проверяем существование обновляемых полей
-        exists_user = await self.user_repo.check_users_exists(
-            username=update_user_data.username, email=str(update_user_data.email)
-        )
-        if exists_user:
-            logger.warning(UserAlreadyExists.message)
-            raise UserAlreadyExists
-
-        updated_user = await self.user_repo.update_user(
-            user=user,
-            update_user_data=update_user_data,
-            partial=partial,
-        )
-        logger.info(f"Пользователь {user} успешно обновлен!")
-
-        return UserReadSchema.model_validate(updated_user)
 
     @staticmethod
     async def get_access_token_from_headers(
@@ -345,7 +283,6 @@ class AuthService:
         except AccessTokenRequiredError:
             logger.error("Некорректный тип токена")
             raise NotAuthorizedException("Некорректный тип токена")
-
 
 async def get_auth_service(
     user_repo: UserRepositoryDep,

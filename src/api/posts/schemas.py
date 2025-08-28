@@ -1,14 +1,16 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from api.comments.schemas import CommentSummaryReadSchema
 
 
 class PostBaseSchema(BaseModel):
-    title: str
-    description: Optional[str]
+    title: str = Field(max_length=128)
+    description: Optional[str] = Field(max_length=2048)
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class PostCreateSchema(PostBaseSchema):

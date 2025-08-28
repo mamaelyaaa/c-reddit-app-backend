@@ -8,17 +8,15 @@ from fastapi import (
 from fastapi.security import HTTPBearer
 
 from api.users.schemas import (
-    UserReadSchema,
-    UserUpdatePartialSchema,
     UserRegisterSchema,
     UserLoginSchema,
 )
 from schemas import BaseResponseIdSchema
-from .dependencies import ActiveUserDep, CurrentUserDep
+from .dependencies import ActiveUserDep, get_active_user
 from .schemas import BearerResponseSchema
 from .service import AuthServiceDep
 
-router = APIRouter(prefix="/users", tags=["Авторизация"])
+router = APIRouter(prefix="/auth", tags=["Авторизация"])
 
 http_bearer = HTTPBearer(auto_error=False)
 
@@ -54,59 +52,26 @@ async def refresh_access_token(auth_service: AuthServiceDep, request: Request):
 @router.delete(
     "/logout",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(http_bearer)],
+    dependencies=[Depends(http_bearer), Depends(get_active_user)],
 )
 async def logout_user(
-    active_user: ActiveUserDep,
     auth_service: AuthServiceDep,
     request: Request,
+    response: Response,
 ):
-    await auth_service.logout_user(request)
+    await auth_service.logout_user(request, response)
     return
 
 
 @router.delete(
     "/revoke",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(http_bearer)],
+    dependencies=[Depends(http_bearer), Depends(get_active_user)],
 )
 async def revoke_all_sessions(
-    active_user: ActiveUserDep,
     auth_service: AuthServiceDep,
     request: Request,
+    response: Response,
 ):
-    await auth_service.revoke_sessions(request)
+    await auth_service.revoke_sessions(request, response)
     return
-
-
-@router.get("/me", response_model=UserReadSchema, dependencies=[Depends(http_bearer)])
-async def get_current_user(current_user: CurrentUserDep):
-    return current_user
-
-
-@router.patch("/me", response_model=UserReadSchema, dependencies=[Depends(http_bearer)])
-async def current_user_partial_update(
-    active_user: ActiveUserDep,
-    auth_service: AuthServiceDep,
-    update_data: UserUpdatePartialSchema,
-):
-    updated_cur_user = await auth_service.update_user(
-        update_user_data=update_data,
-        user_id=active_user.id,
-        partial=True,
-    )
-    return updated_cur_user
-
-
-@router.put("/me", response_model=UserReadSchema, dependencies=[Depends(http_bearer)])
-async def current_user_update(
-    active_user: ActiveUserDep,
-    auth_service: AuthServiceDep,
-    update_data: UserUpdatePartialSchema,
-):
-    updated_cur_user = await auth_service.update_user(
-        update_user_data=update_data,
-        user_id=active_user.id,
-        partial=False,
-    )
-    return updated_cur_user

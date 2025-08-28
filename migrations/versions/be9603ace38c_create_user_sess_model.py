@@ -48,8 +48,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_index(
-        op.f("ix_users_sessions_refresh_token"), table_name="users_sessions"
-    )
+    op.drop_index(op.f("ix_users_sessions_refresh_token"), table_name="users_sessions")
     op.drop_index(op.f("ix_users_sessions_id"), table_name="users_sessions")
     op.drop_table("users_sessions")

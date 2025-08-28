@@ -3,7 +3,7 @@ from taskiq import AsyncTaskiqTask
 
 from api.auth import ActiveUserDep, http_bearer
 from api.tasks.feed_tasks import create_event_for_users
-from core.dependencies import PaginationDep, FiltersDep
+from core.dependencies import PaginationDep
 from schemas import SearchResponseSchema
 from .schemas import (
     PostCreateSchema,

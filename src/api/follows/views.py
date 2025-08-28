@@ -25,7 +25,7 @@ async def subscribe_user(
     )
 
     return BaseResponseSchema(
-        detail=f"Пользователь успешно подписался на {target_id = }"
+        detail=f"Пользователь #{active_user.id} успешно подписался на пользователя #{target_id}"
     )
 
 

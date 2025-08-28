@@ -23,9 +23,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.add_column(
         "posts",
-        sa.Column(
-            "comments_count", sa.Integer(), server_default="0", nullable=False
-        ),
+        sa.Column("comments_count", sa.Integer(), server_default="0", nullable=False),
     )
 
 

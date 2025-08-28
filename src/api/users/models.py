@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class User(Base, DateMixin):
     __tablename__ = "users"
 
-    repr_cols_num = 2
+    repr_cols_num = 1
 
     # Колонки
     username: Mapped[str] = mapped_column(String(128), unique=True)
