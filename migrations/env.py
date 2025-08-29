@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from api.auth.models import UserSession  # type: ignore
+from api.auth.models import UserSession, UserVerificationToken  # type: ignore
 from api.comments.models import Comment  # type: ignore
 from api.feeds.models import UserFeed  # type: ignore
 from api.follows.models import Follow  # type: ignore

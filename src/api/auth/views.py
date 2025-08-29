@@ -11,9 +11,9 @@ from api.users.schemas import (
     UserRegisterSchema,
     UserLoginSchema,
 )
-from schemas import BaseResponseIdSchema
-from .dependencies import ActiveUserDep, get_active_user
-from .schemas import BearerResponseSchema
+from schemas import BaseResponseTaskSchema, BaseResponseSchema
+from .dependencies import get_active_user
+from .schemas import BearerResponseSchema, UserForgotPwdSchema
 from .service import AuthServiceDep
 
 router = APIRouter(prefix="/auth", tags=["Авторизация"])
@@ -24,9 +24,12 @@ http_bearer = HTTPBearer(auto_error=False)
 @router.post(
     "/register",
     status_code=status.HTTP_201_CREATED,
-    response_model=BaseResponseIdSchema,
+    response_model=BaseResponseTaskSchema,
 )
-async def register_user(auth_service: AuthServiceDep, user_data: UserRegisterSchema):
+async def register_user(
+    auth_service: AuthServiceDep,
+    user_data: UserRegisterSchema,
+):
     user_id = await auth_service.register_user(user_data)
     return user_id
 
@@ -42,7 +45,6 @@ async def login_user(
 @router.get(
     "/refresh",
     response_model=BearerResponseSchema,
-    dependencies=[Depends(http_bearer)],
 )
 async def refresh_access_token(auth_service: AuthServiceDep, request: Request):
     new_access_token = await auth_service.refresh_token(request)
@@ -74,4 +76,27 @@ async def revoke_all_sessions(
     response: Response,
 ):
     await auth_service.revoke_sessions(request, response)
+    return
+
+
+@router.post(
+    "/forgot-password",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=BaseResponseSchema,
+)
+async def forgot_password(
+    auth_service: AuthServiceDep,
+    user_info: UserForgotPwdSchema,
+):
+    await auth_service.forgot_password(user_info=user_info)
+    return BaseResponseSchema(detail="Запрос успешно отправлен. Проверьте свою почту")
+
+
+@router.get("/reset-password")
+async def reset_password(
+    auth_service: AuthServiceDep,
+    token: str,
+    user_id: int,
+):
+    await auth_service.reset_password(token, user_id)
     return

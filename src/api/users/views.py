@@ -4,7 +4,9 @@ from api.auth import http_bearer, CurrentUserDep, ActiveUserDep
 from .schemas import UserReadSchema, UserUpdatePartialSchema
 from .service import UserServiceDep
 
-router = APIRouter(prefix="/users", tags=["Пользователь"], dependencies=[Depends(http_bearer)])
+router = APIRouter(
+    prefix="/users", tags=["Пользователь"], dependencies=[Depends(http_bearer)]
+)
 
 
 @router.get("/me", response_model=UserReadSchema)

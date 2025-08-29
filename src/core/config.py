@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Literal
 
 from authx.types import AlgorithmType, TokenLocation, SameSitePolicy
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -91,6 +91,12 @@ class BrokerConfig(BaseModel):
         return f"amqp://{self.username}:{self.password}@{self.host}:{self.port}/"
 
 
+class MailDevConfig(BaseModel):
+    admin_email: EmailStr
+    host: str
+    port: int
+
+
 class Settings(BaseSettings):
     api: ApiConfig = ApiConfig()
     run: RunConfig = RunConfig()
@@ -99,6 +105,7 @@ class Settings(BaseSettings):
 
     db: DatabaseConfig
     broker: BrokerConfig
+    mail: MailDevConfig
     jwt: JWTConfig
 
     model_config = SettingsConfigDict(

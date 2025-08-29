@@ -11,6 +11,11 @@ class BaseResponseIdSchema(BaseModel):
     id: int
 
 
+class BaseResponseTaskSchema(BaseModel):
+    id: int
+    task_id: str
+
+
 class PaginationSchema(BaseModel):
     limit: int = Field(10, ge=1, le=50)
     page: int = Field(1, ge=1)

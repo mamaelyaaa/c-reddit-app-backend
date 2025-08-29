@@ -18,3 +18,11 @@ class UserSession(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=func.now()
     )
+
+
+class UserVerificationToken(Base):
+    __tablename__ = "users_verification_tokens"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    hashed_token: Mapped[str]
+    expired_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

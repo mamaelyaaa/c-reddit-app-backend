@@ -6,7 +6,7 @@ from sqlalchemy import delete
 
 from core.dependencies import SessionDep
 from repository import RepositoryProtocol, SQLAlchemyRepository
-from .models import UserSession
+from .models import UserSession, UserVerificationToken
 
 logger = logging.getLogger(__name__)
 
@@ -34,4 +34,25 @@ def get_user_session_repository(session: SessionDep) -> UserSessionRepositoryPro
 
 UserSessionRepositoryDep = Annotated[
     UserSessionRepositoryProtocol, Depends(get_user_session_repository)
+]
+
+
+class UserVerifTokenRepositoryProtocol(
+    RepositoryProtocol[UserVerificationToken], Protocol
+):
+    pass
+
+
+class UserVerifTokenRepository(SQLAlchemyRepository):
+    model = UserVerificationToken
+
+
+def get_user_verif_token_repository(
+    session: SessionDep,
+) -> UserVerifTokenRepositoryProtocol:
+    return UserVerifTokenRepository(session)
+
+
+UserVerifTokenRepositoryDep = Annotated[
+    UserVerifTokenRepositoryProtocol, Depends(get_user_verif_token_repository)
 ]
