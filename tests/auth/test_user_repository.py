@@ -1,33 +1,27 @@
-from typing import Any
-
 import pytest
 
-from api.users.repository import UserRepositoryImpl, UserRepositoryProtocol
+from api.users.models import User
+from api.users.repository import get_user_repository
 
 
-@pytest.fixture(scope="package")
-def user_repository(db_session) -> UserRepositoryProtocol:
-    return UserRepositoryImpl(db_session)
+async def test_user_create(db_session):
+    user_repo = get_user_repository(db_session)
+
+    user_id = await user_repo.create(
+        data={
+            "email": "user123@example.com",
+            "password": "qwerty123",
+            "username": "user",
+        }
+    )
+    assert user_id == 1
 
 
-@pytest.fixture
-def user() -> dict[str, Any]:
-    return {
-        "username": "oleg228",
-        "email": "oleg@example.com",
-        "password": "qwerty123",
-        "is_superuser": False,
-    }
+async def test_user_read(db_session):
+    user = User(username="user", email="user123@example.com", password="qwerty123")
+    db_session.add(user)
+    await db_session.commit()
 
-
-# @pytest.mark.asyncio
-# async def test_user_create(user_repository: UserRepositoryProtocol, user):
-#     user_id = await user_repository.add_user(UserRegisterSchema(**user))
-#     assert user_id == 1
-
-
-# @pytest.mark.asyncio
-# async def test_user_read(user_repository: UserRepositoryProtocol, user):
-#     user = await user_repository.get_user(id=1)
-#     # assert user_id == 1
-#     print(user)
+    user_repo = get_user_repository(db_session)
+    # founded_user = await user_repo.read_one(id=1)
+    # assert user == founded_user

@@ -42,7 +42,7 @@ class EmailRepositoryImpl:
     @staticmethod
     @broker.task(task_name="send_verification_email")
     async def send_verification_email(recipient: str, token: str, user_id: int) -> None:
-        url = f"http://{settings.run.host}:{settings.run.port}/api/auth/reset-password?token={token}&user_id={user_id}"
+        url = f"http://{settings.run.url}/api/auth/reset-password?token={token}&user_id={user_id}"
 
         body = f"""
             <!DOCTYPE html>

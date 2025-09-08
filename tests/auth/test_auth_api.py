@@ -12,7 +12,7 @@ class TestAuthRegister:
             "username": "user",
             "is_superuser": False,
         }
-        resp = client.post("/api/users/register", json=user_data)
+        resp = client.post("/api/auth/register", json=user_data)
         assert resp.status_code == 201
 
     @pytest.mark.parametrize(
@@ -106,7 +106,7 @@ class TestAuthRegister:
         status_code: int,
         expected_ans: str | list[dict],
     ):
-        resp = client.post("/api/users/register", json=data)
+        resp = client.post("/api/auth/register", json=data)
         assert resp.status_code == status_code
         assert resp.json() == expected_ans
 
@@ -118,7 +118,7 @@ class TestAuthLogin:
             "password": "qwerty123",
             "username": "user",
         }
-        resp = client.post("/api/users/login", json=user_data)
+        resp = client.post("/api/auth/login", json=user_data)
         assert resp.status_code == 200
         assert "access_token" in resp.json() and resp.json()["token_type"] == "Bearer"
 
@@ -164,7 +164,7 @@ class TestAuthLogin:
         status_code: int,
         expected_ans: dict[str, Any],
     ):
-        resp = client.post("/api/users/login", json=data)
+        resp = client.post("/api/auth/login", json=data)
         assert resp.status_code == status_code
         assert resp.json() == expected_ans
 
@@ -176,7 +176,7 @@ def access_token(client: TestClient) -> str:
         "password": "qwerty123",
         "username": "user",
     }
-    resp = client.post("/api/users/login", json=user_data)
+    resp = client.post("/api/auth/login", json=user_data)
     assert resp.status_code == 200
     return resp.json()["access_token"]
 
@@ -187,7 +187,7 @@ class TestAuthRefreshOldToken:
         client: TestClient,
         auth_client_headers: dict[str, str],
     ):
-        resp = client.get("/api/users/refresh", headers=auth_client_headers)
+        resp = client.get("/api/auth/refresh", headers=auth_client_headers)
         assert resp.status_code == 200
         assert resp.json()["token_type"] == "Bearer"
         assert resp.json()["access_token"] != auth_client_headers["Authorization"]
@@ -235,7 +235,7 @@ class TestAuthRefreshOldToken:
         status_code: int,
         expected_ans: dict[str, Any],
     ):
-        resp = client.get("/api/users/refresh", headers=headers)
+        resp = client.get("/api/auth/refresh", headers=headers)
         assert resp.status_code == status_code
         assert resp.json() == expected_ans
 

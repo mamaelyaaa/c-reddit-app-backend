@@ -25,7 +25,10 @@ async def setup_db():
 @pytest_asyncio.fixture(scope="session")
 async def db_session():
     async with db_helper.get_session_factory() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            await session.close()
 
 
 @pytest.fixture(scope="session", autouse=True)

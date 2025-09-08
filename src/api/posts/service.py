@@ -24,6 +24,14 @@ class PostServiceProtocol(Protocol):
     async def create_post(self, user_id: int, post_data: PostCreateSchema) -> int:
         pass
 
+    async def get_post_by_id(self, post_id: int) -> PostReadSchema:
+        pass
+
+    async def get_current_user_posts(
+        self, user_id: int
+    ) -> SearchResponseSchema[PostSummarySchema]:
+        pass
+
     async def get_post_by_post_id(self, user_id: int, post_id: int) -> PostReadSchema:
         pass
 
@@ -50,12 +58,7 @@ class PostServiceProtocol(Protocol):
 class PostService:
     """Сервис постов авторизованного пользователя"""
 
-    def __init__(
-        self,
-        session: AsyncSession,
-        post_repo: PostRepositoryProtocol,
-    ):
-        self.session = session
+    def __init__(self, post_repo: PostRepositoryProtocol):
         self.post_repo = post_repo
 
     async def create_post(self, user_id: int, post_data: PostCreateSchema) -> int:
@@ -79,6 +82,27 @@ class PostService:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
         logger.info(f"Пользователь #%d открыл пост #%d", user_id, post_id)
+        return PostReadSchema.model_validate(post)
+
+    async def get_current_user_posts(
+        self, user_id: int, pagination: PaginationSchema
+    ) -> SearchResponseSchema[PostSummarySchema]:
+        count = await self.post_repo.count(user_id=user_id)
+        post = await self.post_repo.read_all(
+            user_id=user_id, limit=pagination.limit, offset=pagination.offset
+        )
+        logger.info(f"Пользователь #%d открыл свои посты", user_id)
+        return SearchResponseSchema(
+            detail=[PostSummarySchema.model_validate(post) for post in posts],
+            pagination=pagination,
+            total_found=count,
+        )
+
+    async def get_post_by_id(self, post_id: int) -> PostReadSchema:
+        post = await self.post_repo.read_one(id=post_id)
+        if not post:
+            logger.error(PostNotFoundException.message)
+            raise PostNotFoundException
         return PostReadSchema.model_validate(post)
 
     async def get_posts(
@@ -140,11 +164,8 @@ class PostService:
         return
 
 
-async def get_posts_service(
-    session: SessionDep,
-    post_repo: PostRepositoryDep,
-) -> PostServiceProtocol:
-    return PostService(session, post_repo)
+def get_posts_service(post_repo: PostRepositoryDep) -> PostServiceProtocol:
+    return PostService(post_repo)
 
 
 PostServiceDep = Annotated[PostServiceProtocol, Depends(get_posts_service)]

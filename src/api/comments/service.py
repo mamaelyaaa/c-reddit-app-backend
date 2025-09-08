@@ -42,7 +42,9 @@ class CommentServiceProtocol(Protocol):
     ) -> CommentReadSchema:
         pass
 
-    async def delete_user_comment(self, post_id: int, user_id: int) -> None:
+    async def delete_user_comment(
+        self, post_id: int, user_id: int, comment_id: int
+    ) -> None:
         pass
 
 
@@ -68,7 +70,7 @@ class CommentServiceImpl:
     async def create_comment(
         self, user_id: int, post_id: int, content: str
     ) -> BaseResponseIdSchema:
-        post = await self.post_repo.read_one(user_id=user_id, id=post_id)
+        post = await self.post_repo.read_one(id=post_id)
         if not post:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
@@ -158,13 +160,20 @@ class CommentServiceImpl:
         )
         return CommentReadSchema.model_validate(upd_comment)
 
-    async def delete_user_comment(self, post_id: int, user_id: int) -> None:
-        post = await self.post_repo.read_one(user_id=user_id, id=post_id)
+    async def delete_user_comment(
+        self, post_id: int, user_id: int, comment_id: int
+    ) -> None:
+        post = await self.post_repo.read_one(id=post_id)
         if not post:
             logger.error(PostNotFoundException.message)
             raise PostNotFoundException
 
-        ...
+        comment = await self._get_base_user_post_comment(
+            post_id=post_id,
+            comment_id=comment_id,
+        )
+        await self.comm_repo.delete(comment)
+        return
 
 
 async def get_comment_service(

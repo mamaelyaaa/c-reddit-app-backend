@@ -43,20 +43,21 @@ async def create_comment_for_post(
 #     return comment_id
 
 
-@router.delete("/{post_id}/comments", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{post_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_post_comment(
     active_user: ActiveUserDep,
     comm_service: CommentServiceDep,
     post_id: int,
+    comment_id: int,
 ):
     """
     Удаляет комментарий под постом
-    TODO Не проверялось
     """
 
     await comm_service.delete_user_comment(
-        user_id=active_user.id,
-        post_id=post_id,
+        user_id=active_user.id, post_id=post_id, comment_id=comment_id
     )
     return
 

@@ -39,6 +39,7 @@ class UserReadSchema(BaseModel):
 
     id: int
     username: str
+    # posts: list[PostSummarySchema]
     email: EmailStr
     created_at: datetime
     updated_at: datetime

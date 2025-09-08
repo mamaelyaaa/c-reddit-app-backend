@@ -60,7 +60,7 @@ class SearchServiceImpl:
     async def search_posts(
         self, filters: FiltersSchema, pagination: PaginationSchema
     ) -> SearchResponseSchemaWithFilters[PostSummarySchema]:
-        pass
+        raise NotImplemented
 
 
 def get_search_service(

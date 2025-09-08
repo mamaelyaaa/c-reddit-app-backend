@@ -98,13 +98,13 @@ class AuthService:
         self,
         user_repo: UserRepositoryProtocol,
         user_session_repo: UserSessionRepositoryProtocol,
-        email_repo: EmailRepositoryProtocol,
         user_verif_token_repo: UserVerifTokenRepositoryProtocol,
+        email_repo: EmailRepositoryProtocol,
     ):
         self.user_repo = user_repo
         self.user_session_repo = user_session_repo
-        self.email_repo = email_repo
         self.user_verif_token_repo = user_verif_token_repo
+        self.email_repo = email_repo
 
     async def register_user(
         self, user_data: UserRegisterSchema
@@ -403,10 +403,15 @@ class AuthService:
 async def get_auth_service(
     user_repo: UserRepositoryDep,
     user_session_repo: UserSessionRepositoryDep,
-    email_repo: EmailRepositoryDep,
     user_verif_token_repo: UserVerifTokenRepositoryDep,
+    email_repo: EmailRepositoryDep,
 ) -> AuthServiceProtocol:
-    return AuthService(user_repo, user_session_repo, email_repo, user_verif_token_repo)
+    return AuthService(
+        user_repo=user_repo,
+        user_session_repo=user_session_repo,
+        email_repo=email_repo,
+        user_verif_token_repo=user_verif_token_repo,
+    )
 
 
 AuthServiceDep = Annotated[AuthServiceProtocol, Depends(get_auth_service)]

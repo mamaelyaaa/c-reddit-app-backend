@@ -17,11 +17,12 @@ from .service import PostServiceDep
 router = APIRouter(
     prefix="/posts",
     tags=["Посты"],
-    dependencies=[Depends(http_bearer)],
 )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", status_code=status.HTTP_201_CREATED, dependencies=[Depends(http_bearer)]
+)
 async def create_post(
     active_user: ActiveUserDep,
     post_service: PostServiceDep,
@@ -41,9 +42,25 @@ async def create_post(
     return {"post_id": post_id, "task_id": task.task_id}
 
 
+# @router.get("/{post_id}", response_model=PostReadSchema)
+# async def get_post_by_post_id(
+#     active_user: ActiveUserDep,
+#     post_service: PostServiceDep,
+#     post_id: int,
+# ):
+#     """
+#     Получение поста авторизованного пользователя по уникальному id
+#     Дополнительно: получение комментариев под постом
+#     """
+#     post = await post_service.get_post_by_post_id(
+#         user_id=active_user.id,
+#         post_id=post_id,
+#     )
+#     return post
+
+
 @router.get("/{post_id}", response_model=PostReadSchema)
 async def get_post_by_post_id(
-    active_user: ActiveUserDep,
     post_service: PostServiceDep,
     post_id: int,
 ):
@@ -51,14 +68,11 @@ async def get_post_by_post_id(
     Получение поста авторизованного пользователя по уникальному id
     Дополнительно: получение комментариев под постом
     """
-    post = await post_service.get_post_by_post_id(
-        user_id=active_user.id,
-        post_id=post_id,
-    )
+    post = await post_service.get_post_by_id(post_id=post_id)
     return post
 
 
-@router.get("", response_model=SearchResponseSchema[PostSummarySchema])
+@router.get("", response_model=SearchResponseSchema[PostSummarySchema], dependencies=[Depends(http_bearer)])
 async def get_user_posts(
     active_user: ActiveUserDep,
     post_service: PostServiceDep,
@@ -70,7 +84,9 @@ async def get_user_posts(
     return posts
 
 
-@router.put("/{post_id}", response_model=PostReadSchema)
+@router.put(
+    "/{post_id}", response_model=PostReadSchema, dependencies=[Depends(http_bearer)]
+)
 async def update_user_post(
     active_user: ActiveUserDep,
     post_service: PostServiceDep,
@@ -88,7 +104,9 @@ async def update_user_post(
     return post
 
 
-@router.patch("/{post_id}", response_model=PostReadSchema)
+@router.patch(
+    "/{post_id}", response_model=PostReadSchema, dependencies=[Depends(http_bearer)]
+)
 async def update_user_post_partially(
     active_user: ActiveUserDep,
     post_service: PostServiceDep,
@@ -106,7 +124,11 @@ async def update_user_post_partially(
     return post
 
 
-@router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{post_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(http_bearer)],
+)
 async def delete_user_post(
     active_user: ActiveUserDep,
     post_service: PostServiceDep,
